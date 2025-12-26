@@ -1,9 +1,27 @@
 version: "3.9"
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: legal-check-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: legal_ai
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
   api:
     build: .
-    container_name: legal-check-ai
+    container_name: legal-check-ai-api
+    depends_on:
+      - db
     ports:
       - "8000:8000"
     env_file:
@@ -11,3 +29,6 @@ services:
     volumes:
       - ./app:/app/app
     restart: always
+
+volumes:
+  postgres_data:
