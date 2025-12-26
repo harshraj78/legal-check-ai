@@ -1,7 +1,10 @@
 from fastapi import APIRouter
+from app.api.v1.endpoints import contracts
 
-router = APIRouter()
+api_router = APIRouter()
 
-@router.get("/health")
-def health():
-    return {"status": "ok"}
+api_router.include_router(
+    contracts.router,
+    prefix="/contracts",
+    tags=["contracts"],
+)
