@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+.venv/
+
+# Poetry
+.poetry/
+dist/
+build/
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
