@@ -13,8 +13,13 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "password"
     POSTGRES_DB: str = "legal_ai"
     DATABASE_URL: str | None = None
-    
+
+    # Storage
     STORAGE_DIR: Path = Path("storage")
+    
+    # 🔹 Hugging Face (AI)
+    HF_API_TOKEN: str | None = None
+    HF_MODEL_ID: str = "mistralai/Mistral-7B-Instruct-v0.2"
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
