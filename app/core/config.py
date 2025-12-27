@@ -1,5 +1,6 @@
 from pydantic import PostgresDsn, field_validator, ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Legal-Check AI"
@@ -12,6 +13,8 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "password"
     POSTGRES_DB: str = "legal_ai"
     DATABASE_URL: str | None = None
+    
+    STORAGE_DIR: Path = Path("storage")
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
