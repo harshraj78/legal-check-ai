@@ -22,11 +22,13 @@ class Settings(BaseSettings):
         # Build the DSN from components if DATABASE_URL isn't provided directly
         return str(PostgresDsn.build(
             scheme="postgresql+psycopg2",
-            username=info.data.get("POSTGRES_USER"),
-            password=info.data.get("POSTGRES_PASSWORD"),
-            host=info.data.get("POSTGRES_SERVER"),
-            path=f"{info.data.get('POSTGRES_DB') or ''}",
+            username=info.data["POSTGRES_USER"],
+            password=info.data["POSTGRES_PASSWORD"],
+            host=info.data["POSTGRES_SERVER"],
+            port=5432,
+            path=f"{info.data['POSTGRES_DB']}",
         ))
+
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 

@@ -18,6 +18,8 @@ RUN pip install "poetry==$POETRY_VERSION"
 
 # Copy only dependency files
 COPY pyproject.toml poetry.lock* ./
+COPY alembic.ini ./alembic.ini
+COPY migrations ./migrations
 
 # Install dependencies without creating a virtualenv inside Docker
 RUN poetry config virtualenvs.create false \
