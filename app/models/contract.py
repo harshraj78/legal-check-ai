@@ -4,6 +4,7 @@ from sqlalchemy import Text, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+# from app.models.analysis_result import AnalysisResult
 from app.models.base import Base
 
 
@@ -24,9 +25,12 @@ class Contract(Base):
     )
 
     analysis: Mapped["AnalysisResult"] = relationship(
-        back_populates="contract",
-        uselist=False,
+    "AnalysisResult",
+    back_populates="contract",
+    uselist=False,
+    foreign_keys="AnalysisResult.contract_id",
     )
+
 
 
 class AnalysisResult(Base):
@@ -43,5 +47,11 @@ class AnalysisResult(Base):
     )
     risk_score: Mapped[int] = mapped_column(default=0)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     contract: Mapped["Contract"] = relationship(back_populates="analysis")
