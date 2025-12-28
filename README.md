@@ -108,7 +108,7 @@ PDF Text Extraction → AI Analysis → Persist Result
 
 ### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/your-username/legal-check-ai.git
+git clone https://github.com/harshraj78/legal-check-ai.git
 cd legal-check-ai
 ````
 
