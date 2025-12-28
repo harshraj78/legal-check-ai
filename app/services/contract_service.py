@@ -1,36 +1,34 @@
-from fastapi import UploadFile, HTTPException, status
-from sqlalchemy.orm import Session
-from uuid import UUID
-from pathlib import Path
 import shutil
 import logging
-import fitz  # PyMuPDF
+from pathlib import Path
+from uuid import UUID
+
+import fitz
+from fastapi import UploadFile, HTTPException, status
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.contract import Contract, AnalysisResult
 from app.integrations.llm_service import LLMService
 
-
 logger = logging.getLogger(__name__)
 
 
 class ContractService:
+    # ---------- FAST ----------
     @staticmethod
-    async def create_contract(db: Session, file: UploadFile) -> Contract:
-        # Ensure storage directory exists
-        settings.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-
-        # 1. Validate file type
+    async def create_contract_record(db: Session, file: UploadFile) -> Contract:
         if not file.filename.lower().endswith(".pdf"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid file type. Only PDFs are allowed."
+                detail="Only PDF files are allowed",
             )
 
-        # 2. Create DB record
+        settings.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+
         contract = Contract(
             filename=file.filename,
-            status="processing"
+            status="pending",
         )
 
         db.add(contract)
@@ -38,66 +36,79 @@ class ContractService:
         db.refresh(contract)
 
         file_path = settings.STORAGE_DIR / f"{contract.id}.pdf"
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
+        return contract
+
+    # ---------- SLOW ----------
+    @staticmethod
+    def process_contract_analysis(contract_id: UUID):
+        from app.core.db import SessionLocal
+
+        db = SessionLocal()
         try:
-            # 3. Save PDF to disk
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            contract = db.query(Contract).filter_by(id=contract_id).first()
+            if not contract:
+                return
 
-            # 4. Extract text from PDF
-            extracted_text = ContractService.extract_text_from_pdf(file_path)
+            logger.info(f"Processing contract {contract_id}")
 
-            # 5. Store extracted text
-            contract.raw_text = extracted_text
+            # 1. Extract text
+            text = ContractService.extract_text_from_pdf(
+                settings.STORAGE_DIR / f"{contract_id}.pdf"
+            )
+            contract.raw_text = text
             db.commit()
 
-            # 6. AI Analysis
-            logger.info(f"Starting AI analysis for contract {contract.id}")
-
+            # 2. AI Analysis
             llm = LLMService()
-            analysis = llm.analyze_contract_text(extracted_text)
+            analysis = llm.analyze_contract_text(text)
 
-            analysis_result = AnalysisResult(
-                contract_id=contract.id,
+            # 3. Save result
+            result = AnalysisResult(
+                contract_id=contract_id,
                 risk_score=analysis["risk_score"],
-                summary=analysis["summary"]
+                summary=analysis["summary"],
             )
+            db.add(result)
 
-            db.add(analysis_result)
             contract.status = "completed"
             db.commit()
 
-            logger.info(f"AI analysis completed for contract {contract.id}")
+            logger.info(f"Completed contract {contract_id}")
 
         except Exception as e:
-            logger.exception(f"Contract processing failed: {contract.id}")
-            contract.status = "failed"
-            db.commit()
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to process contract"
-            )
-
-        return contract
+            logger.exception(f"Failed contract {contract_id}")
+            if contract:
+                contract.status = "failed"
+                db.commit()
+        finally:
+            db.close()
 
     @staticmethod
-    def get_contract(db: Session, contract_id: UUID) -> Contract:
-        contract = db.query(Contract).filter(Contract.id == contract_id).first()
+    def get_contract_with_analysis(db: Session, contract_id: UUID):
+        contract = (
+            db.query(Contract)
+            .filter(Contract.id == contract_id)
+            .first()
+        )
 
         if not contract:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Contract not found"
-            )
+            raise HTTPException(status_code=404, detail="Contract not found")
 
-        return contract
+        return {
+            "id": contract.id,
+            "filename": contract.filename,
+            "status": contract.status,
+            "risk_score": contract.analysis.risk_score if contract.analysis else None,
+            "summary": contract.analysis.summary if contract.analysis else None,
+        }
 
     @staticmethod
     def extract_text_from_pdf(file_path: Path) -> str:
         text = ""
-
         with fitz.open(file_path) as doc:
             for page in doc:
                 text += page.get_text()
-
         return text.strip()
