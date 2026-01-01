@@ -1,5 +1,5 @@
 
-# 📄 Legal-Check AI – Backend Service
+# 📄 Legal-Check AI
 
 A **production-ready backend system** for uploading, processing, and analyzing legal documents asynchronously.  
 Designed with **real-world backend patterns**, scalability, and clean architecture principles.
