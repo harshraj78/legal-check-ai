@@ -200,5 +200,5 @@ SELECT * FROM analysis_results;
 * Replace BackgroundTasks with **Celery + Redis** for high-scale workloads
 * Add retries and task persistence
 * Authentication & role-based access control
-* Frontend dashboard for monitoring contracts - need to deploy
+* Frontend - need to deploy
 
