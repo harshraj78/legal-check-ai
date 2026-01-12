@@ -1,4 +1,3 @@
-
 # 📄 Legal-Check AI
 
 A **production-ready backend system** for uploading, processing, and analyzing legal documents asynchronously.  
